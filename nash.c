@@ -218,7 +218,7 @@ int pinfo_nash(int n, char **args){
 }
 
 int nightswatch_nash(int n, char **args){
-    
+
     int time = atoi(args[1]);
     fd_set input_set;
     struct timeval timeout;
@@ -227,38 +227,38 @@ int nightswatch_nash(int n, char **args){
     FD_ZERO(&input_set);
     /* Listen to the input descriptor */
     FD_SET(STDIN_FILENO, &input_set);
-    
+
     if (!strcmp(args[2],"dirty")){
-		// dirty
+        // dirty
 
-		do {
-			FILE *meminfo = fopen("/proc/meminfo", "r");       
-			ssize_t reads;
-			size_t len = 0;
-			char * line = NULL;
+        do {
+            FILE *meminfo = fopen("/proc/meminfo", "r");       
+            ssize_t reads;
+            size_t len = 0;
+            char * line = NULL;
 
-			if (meminfo == NULL){
-				perror("Error opening meminfo file: ");
-				return 0;
-			}
+            if (meminfo == NULL){
+                perror("Error opening meminfo file: ");
+                return 0;
+            }
 
-			int i = 0;
+            int i = 0;
 
-			while(i < 17 && (reads = getline(&line, &len, meminfo)) != -1) {
-				i++;
-			}
-			printf("%s", line);
+            while(i < 17 && (reads = getline(&line, &len, meminfo)) != -1) {
+                i++;
+            }
+            printf("%s", line);
 
-			fclose(meminfo);
+            fclose(meminfo);
 
-			timeout.tv_sec = time;    // time seconds
-			timeout.tv_usec = 0;    // 0 milliseconds
-			select(1, &input_set, NULL, NULL, &timeout);
-		}
-		while(1);
-		return 0;
-	}
-    
+            timeout.tv_sec = time;    // time seconds
+            timeout.tv_usec = 0;    // 0 milliseconds
+            select(1, &input_set, NULL, NULL, &timeout);
+        }
+        while(1);
+        return 0;
+    }
+
     return 1;
 }
 
@@ -321,6 +321,31 @@ int execute_program(char* command){
     return 1; 
 }
 
+
+int history_nash(int k, char** args){
+    
+    char hist_path[BUF_PWD];
+    strcpy(hist_path, home);
+    strcat(hist_path, "/history.txt");
+
+    char* l[BUF_COM];
+    char c[BUF_COM];
+    int n=0;
+    FILE *f = fopen(hist_path, "r");
+    fgets(c,BUF_COM, f);
+    l[0] = strtok(c, ",");
+
+    while(l[n] != NULL)
+        l[++n] = strtok(NULL, ",");
+    fclose(f);
+
+    for(int i=n-atoi(args[1]);i<n; i++){
+        printf("%s\n", l[i]);
+    }
+
+    return 1;
+}
+
 void calculate_hash(){
 
     cmd_functions[hash("pwd")] = &pwd_nash;
@@ -333,6 +358,7 @@ void calculate_hash(){
     cmd_functions[hash("ls")] = &ls_nash;
     cmd_functions[hash("pinfo")] = &pinfo_nash;
     cmd_functions[hash("nightswatch")] = &nightswatch_nash;
+    cmd_functions[hash("history")] = &history_nash;
 }
 
 
@@ -369,6 +395,44 @@ char* get_prompt(){
 }
 
 
+void local_history(char *cmd){
+
+    char hist_path[BUF_PWD];
+    strcpy(hist_path, home);
+    strcat(hist_path, "/history.txt");
+
+    char* l[BUF_COM];
+    char c[BUF_COM];
+    int n=0;
+    FILE *f = fopen(hist_path, "r");
+
+
+    fgets(c,BUF_COM, f);
+    l[0] = strtok(c, ",");
+
+    while(l[n] != NULL)
+        l[++n] = strtok(NULL, ",");
+    fclose(f);
+    FILE *fd = fopen(hist_path, "w");
+
+    int counter = 0;
+    
+    if(n>=20)
+        counter++;
+
+    char tp[BUF_COM];
+    tp[0] ='\0';
+
+    for(int i=counter;i<n;i++){
+        strcat(tp, l[i]);    
+        strcat(tp, ",");    
+    }
+    strcat(tp,cmd);
+    fprintf(fd,"%s",tp);
+
+    fclose(fd);
+}
+
 int get_commands(){
 
     char *pr = get_prompt();
@@ -380,6 +444,8 @@ int get_commands(){
         printf("\nExiting Shell, Goodbye!\n");
         exit(0);
     }
+    add_history(cmds);
+    local_history(cmds);
 
     commands[0] = strtok(cmds,";");
 
@@ -424,7 +490,7 @@ int main(){
 
     getcwd(home, sizeof(home));
     calculate_hash();
-    
+
     while(1){
         int no_commands = get_commands();
         for(int i=0 ;i<no_commands; i++){
