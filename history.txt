@@ -1,0 +1,1 @@
+c,ls -al,cd ..,ls,bash,c,ls,..,c,ls,cd ..,c,ls,cd ~,c,ls,c,ls,c,ls

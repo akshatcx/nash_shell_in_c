@@ -35,6 +35,7 @@
 #define BUF_TOK 1024
 #define HASH_MAX 8192
 
+
 char pwd[BUF_PWD];
 char u_name[BUF_USR];
 char host[BUF_PWD];
@@ -228,6 +229,45 @@ int nightswatch_nash(int n, char **args){
     /* Listen to the input descriptor */
     FD_SET(STDIN_FILENO, &input_set);
 
+    if (!strcmp(args[2],"interrupt")){
+		// Interupt
+		printf("0\tCPU0\tCPU1\tCPU2\tCPU3\n");
+		int k = 1;
+
+		do {
+			FILE *interrupt = fopen("/proc/interrupts", "r");       
+			ssize_t reads;
+			size_t len = 0;
+			char * line = NULL;
+
+			if (interrupt == NULL){
+				perror("Error opening interrupt file: ");
+				return 0;
+			}
+
+			int i = 0;
+
+			while(i < 3 && (reads = getline(&line, &len, interrupt)) != -1) {
+				i++;
+			}
+			long long int cpu0, cpu1, cpu2, cpu3;
+			// printf("%s\n", line);
+
+			sscanf(line, "%*lld: %lld %lld %lld %lld", &cpu0, &cpu1, &cpu2, &cpu3); 
+
+			printf("%d\t%lld\t%lld\t%lld\t%lld\n", k, cpu0, cpu1, cpu2, cpu3);
+			k++;
+
+			fclose(interrupt);
+
+			timeout.tv_sec = time;    // time seconds
+			timeout.tv_usec = 0;    // 0 milliseconds
+			select(1, &input_set, NULL, NULL, &timeout);
+		}
+		while(1);
+
+		return 0;
+	}
     if (!strcmp(args[2],"dirty")){
         // dirty
 
@@ -388,7 +428,7 @@ char* get_prompt(){
     strcpy(path, pwd);
     torelative(path);
 
-    sprintf(p, "<%s@%s[%s]>", u_name, host, path);
+    sprintf(p, "<\x1b[34m%s\x1b[0m@\x1b[34m%s\x1b[32m[%s]\x1b[0m>", u_name, host, path);
 
     strcpy(prompt, p);
     return prompt;
