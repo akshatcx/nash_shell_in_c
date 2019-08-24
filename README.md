@@ -7,3 +7,9 @@ To run the code, you must install readline package
 To build: `make`
 
 To run: `./nash`
+
+## Structure
+- utils.c - Has all the util functions
+- builtins.c - Has all the builtin functions and execvp functions
+- main.c - Has the main function
+- nash.h - Has the definitions, global variables, and function prototypes
