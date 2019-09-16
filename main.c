@@ -14,14 +14,7 @@ int main(){
     while(1){
         int no_commands = get_commands();
         for(int i=0 ;i<no_commands; i++){
-            tokenize(commands[i]);
-            if((*cmd_functions[hash(tokens[0])]) == NULL){
-                execute_program(commands[i]);
-            }
-            else {
-                int code = (*cmd_functions[hash(tokens[0])])(no_tokens, tokens); 
-
-            }
+            execute_program(commands[i]);
         } 
     }
     return 0;

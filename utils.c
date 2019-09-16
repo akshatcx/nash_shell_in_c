@@ -30,6 +30,8 @@ void calculate_hash(){
     cmd_functions[hash("pinfo")] = &pinfo_nash;
     cmd_functions[hash("nightswatch")] = &nightswatch_nash;
     cmd_functions[hash("history")] = &history_nash;
+    cmd_functions[hash("setenv")] = &setenv_nash;
+    cmd_functions[hash("unsetenv")] = &unsetenv_nash;
 }
 
 
@@ -59,7 +61,7 @@ char* get_prompt(){
     strcpy(path, pwd);
     torelative(path);
 
-    sprintf(p, "<\x1b[34m%s\x1b[0m@\x1b[34m%s\x1b[32m[%s]\x1b[0m>", u_name, host, path);
+    sprintf(p, "<\x1b[34m%s\x1b[0m@\x1b[34m%s\x1b[32m[%s]\x1b[0m> ", u_name, host, path);
 
     strcpy(prompt, p);
     return prompt;
@@ -126,7 +128,7 @@ int get_commands(){
     return n;
 }
 
-void tokenize(char *command){
+int tokenize(char *command){
 
     int n = 0;
     char *temp[BUF_TOK];
@@ -134,24 +136,30 @@ void tokenize(char *command){
     char com[BUF_COM];
     strcpy(com,command);
 
-    temp[0] = strtok(com, " \t\n\r\a");
+    tokens[0] = strtok(com, " \t\n\r\a");
 
-    while(temp[n] != NULL)
-        temp[++n] = strtok(NULL, " \t\n\r\a");
+    while(tokens[n] != NULL)
+        tokens[++n] = strtok(NULL, " \t\n\r\a");
 
-    no_tokens = 0;
+    return n;
+}
 
+int extract_flags(int n, char** args){
+    
     for(int i=0;i<256;i++)
         flag_hash[i] = 0;
 
+    int new_n = 0;
+
     for(int i=0;i<n;i++){
-        if(temp[i][0] == '-'){
-            for(int j=1;j<strlen(temp[i]);j++)
-                flag_hash[temp[i][j]] = 1;
+        if(args[i][0] == '-'){
+            for(int j=1;j<strlen(args[i]);j++)
+                flag_hash[args[i][j]] = 1;
         }
         else{
-            tokens[no_tokens] = temp[i];
-            no_tokens++;
+            strcpy(args[new_n], args[i]);
+            new_n++;
         }
     }
+    return new_n;
 }

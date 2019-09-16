@@ -12,7 +12,7 @@ int pwd_nash(int n, char **args){
 }
 
 int echo_nash(int n, char **args){
-    for(int i=1; i<no_tokens; i++)
+    for(int i=1; i<n; i++)
         printf("%s", tokens[i]);
     printf("\n");
     return 1;
@@ -51,7 +51,7 @@ int ls_nash(int n, char **args){
     char items[BUF_PWD][BUF_PWD];
     int no_items = 0;
 
-    if(no_tokens > 1)
+    if(n > 1)
         cd_nash(n, args);
 
     dir = opendir(".");
@@ -162,44 +162,44 @@ int nightswatch_nash(int n, char **args){
     FD_SET(STDIN_FILENO, &input_set);
 
     if (!strcmp(args[2],"interrupt")){
-		// Interupt
-		printf("0\tCPU0\tCPU1\tCPU2\tCPU3\n");
-		int k = 1;
+        // Interupt
+        printf("0\tCPU0\tCPU1\tCPU2\tCPU3\n");
+        int k = 1;
 
-		do {
-			FILE *interrupt = fopen("/proc/interrupts", "r");       
-			ssize_t reads;
-			size_t len = 0;
-			char * line = NULL;
+        do {
+            FILE *interrupt = fopen("/proc/interrupts", "r");       
+            ssize_t reads;
+            size_t len = 0;
+            char * line = NULL;
 
-			if (interrupt == NULL){
-				perror("Error opening interrupt file: ");
-				return 0;
-			}
+            if (interrupt == NULL){
+                perror("Error opening interrupt file: ");
+                return 0;
+            }
 
-			int i = 0;
+            int i = 0;
 
-			while(i < 3 && (reads = getline(&line, &len, interrupt)) != -1) {
-				i++;
-			}
-			long long int cpu0, cpu1, cpu2, cpu3;
-			// printf("%s\n", line);
+            while(i < 3 && (reads = getline(&line, &len, interrupt)) != -1) {
+                i++;
+            }
+            long long int cpu0, cpu1, cpu2, cpu3;
+            // printf("%s\n", line);
 
-			sscanf(line, "%*lld: %lld %lld %lld %lld", &cpu0, &cpu1, &cpu2, &cpu3); 
+            sscanf(line, "%*lld: %lld %lld %lld %lld", &cpu0, &cpu1, &cpu2, &cpu3); 
 
-			printf("%d\t%lld\t%lld\t%lld\t%lld\n", k, cpu0, cpu1, cpu2, cpu3);
-			k++;
+            printf("%d\t%lld\t%lld\t%lld\t%lld\n", k, cpu0, cpu1, cpu2, cpu3);
+            k++;
 
-			fclose(interrupt);
+            fclose(interrupt);
 
-			timeout.tv_sec = time;    // time seconds
-			timeout.tv_usec = 0;    // 0 milliseconds
-			select(1, &input_set, NULL, NULL, &timeout);
-		}
-		while(1);
+            timeout.tv_sec = time;    // time seconds
+            timeout.tv_usec = 0;    // 0 milliseconds
+            select(1, &input_set, NULL, NULL, &timeout);
+        }
+        while(1);
 
-		return 0;
-	}
+        return 0;
+    }
     if (!strcmp(args[2],"dirty")){
         // dirty
 
@@ -249,19 +249,20 @@ void child_exited(int n){
 
 int execute_program(char* command){
 
-    int n = 0, bg = 0;
-    char *tok[BUF_TOK];
-
-    tok[n] = strtok(command, " \t\n\r\a");
-
-    while(tok[n] != NULL){
-        tok[++n] = strtok(NULL, " \t\n\r\a");
+    int no_tokens = tokenize(command);
+    
+    if((*cmd_functions[hash(tokens[0])]) != NULL){
+        no_tokens = extract_flags(no_tokens, tokens);
+        return (*cmd_functions[hash(tokens[0])])(no_tokens, tokens);
     }
+
+    int bg = 0;
+    
     pid_t pid = fork();
 
-    if(strcmp(tok[n-1],"&")==0){
-        n--;
-        tok[n] = NULL;
+    if(strcmp(tokens[no_tokens-1],"&")==0){
+        no_tokens--;
+        tokens[no_tokens] = NULL;
         bg = 1;
     } 
 
@@ -273,7 +274,7 @@ int execute_program(char* command){
         if(bg)
             setpgid(0, 0);
 
-        int proc = execvp(tok[0], tok);
+        int proc = execvp(tokens[0], tokens);
         if(proc == -1)
             perror("Error executing:");
 
@@ -295,7 +296,7 @@ int execute_program(char* command){
 
 
 int history_nash(int k, char** args){
-    
+
     char hist_path[BUF_PWD];
     strcpy(hist_path, home);
     strcat(hist_path, "/history.txt");
@@ -310,16 +311,48 @@ int history_nash(int k, char** args){
     while(l[n] != NULL)
         l[++n] = strtok(NULL, ",");
     fclose(f);
-    
+
     int t;
     if(k==1)
         t=10;
     else
         t=atoi(args[1]);
-        
+
     for(int i=n-t;i<n; i++){
         printf("%s\n", l[i]);
     }
 
+    return 1;
+}
+
+int setenv_nash(int n, char **args){
+
+    if(n!=2 && n!=3){
+        printf("setenv: Incorrect number of arguments\n");
+        return -1;
+    }
+
+    char var[BUF_ENV], val[BUF_ENV];
+    strcpy(var, args[1]);
+    strcpy(val, "");
+
+    if(n == 3)
+        strcpy(val, args[2]);
+
+    setenv(var, val, 1);
+    return 1;
+}
+
+int unsetenv_nash(int n, char **args){
+
+    if(n!=2){
+        printf("unsetenv: Incorrect number of arguments\n");
+        return -1;
+    }
+
+    char var[BUF_ENV];
+    strcpy(var, args[1]);
+
+    unsetenv(var);
     return 1;
 }

@@ -37,7 +37,7 @@
 #define BUF_COM 1024
 #define BUF_TOK 1024
 #define HASH_MAX 8192
-
+#define BUF_ENV 1024
 
 char pwd[BUF_PWD];
 char u_name[BUF_USR];
@@ -47,28 +47,29 @@ char prompt[BUF_PMT];
 char *commands[BUF_COM];
 char *tokens[BUF_TOK];
 int flag_hash[256];
-int no_flags;
-int no_tokens;
 int (*cmd_functions[HASH_MAX]) (int, char **);
 
 void torelative(char *path);
 int hash(unsigned char *str);
-int exit_nash(int n, char **args);
-int pwd_nash(int n, char **args);
-int echo_nash(int n, char **args);
-int cd_nash(int n, char **args);
-int clear_nash(int n, char **args);
-int ls_nash(int n, char **args);
-int pinfo_nash(int n, char **args);
-int nightswatch_nash(int n, char **args);
+int exit_nash(int n, char** args);
+int pwd_nash(int n, char** args);
+int echo_nash(int n, char** args);
+int cd_nash(int n, char** args);
+int clear_nash(int n, char** args);
+int ls_nash(int n, char** args);
+int pinfo_nash(int n, char** args);
+int nightswatch_nash(int n, char** args);
 void child_exited(int n);
 int execute_program(char* command);
 int history_nash(int k, char** args);
+int setenv_nash(int k, char** args);
+int unsetenv_nash(int k, char** args);
 void calculate_hash();
 void update();
 char* get_prompt();
 void local_history(char *cmd);
 int get_commands();
-void tokenize(char *command);
+int tokenize(char *command);
+int extract_flags(int n, char** args);
 
 #endif
