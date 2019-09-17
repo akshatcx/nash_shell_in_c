@@ -250,12 +250,18 @@ void child_exited(int n){
 int execute_program(char* command){
 
     int no_tokens = tokenize(command);
-    
+    int savestdout = dup(1);
+    no_tokens = redirect(no_tokens, tokens);
+    if(no_tokens == -1)
+        return -1;     
+
     if((*cmd_functions[hash(tokens[0])]) != NULL){
         no_tokens = extract_flags(no_tokens, tokens);
-        return (*cmd_functions[hash(tokens[0])])(no_tokens, tokens);
+        int exitcode = (*cmd_functions[hash(tokens[0])])(no_tokens, tokens);
+        dup2(savestdout,1);
+        return exitcode;
     }
-
+    
     int bg = 0;
     
     pid_t pid = fork();
@@ -273,7 +279,7 @@ int execute_program(char* command){
     else if(pid == 0){
         if(bg)
             setpgid(0, 0);
-
+        
         int proc = execvp(tokens[0], tokens);
         if(proc == -1)
             perror("Error executing:");
@@ -291,6 +297,7 @@ int execute_program(char* command){
             signal(SIGCHLD, child_exited);
         }
     }
+    dup2(savestdout,1);
     return 1; 
 }
 

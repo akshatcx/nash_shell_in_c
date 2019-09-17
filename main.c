@@ -14,7 +14,7 @@ int main(){
     while(1){
         int no_commands = get_commands();
         for(int i=0 ;i<no_commands; i++){
-            execute_program(commands[i]);
+            int exitcode = execute_program(commands[i]);
         } 
     }
     return 0;

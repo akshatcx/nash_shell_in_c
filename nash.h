@@ -71,5 +71,6 @@ void local_history(char *cmd);
 int get_commands();
 int tokenize(char *command);
 int extract_flags(int n, char** args);
+int redirect(int n, char** args);
 
 #endif

@@ -1,2 +1,2 @@
 main: *.c
-	gcc *c -o nash -lreadline
+	gcc *c -o nash -lreadline -g

@@ -89,7 +89,7 @@ void local_history(char *cmd){
     FILE *fd = fopen(hist_path, "w");
 
     int counter = 0;
-    
+
     if(n>=20)
         counter++;
 
@@ -131,7 +131,6 @@ int get_commands(){
 int tokenize(char *command){
 
     int n = 0;
-    char *temp[BUF_TOK];
 
     char com[BUF_COM];
     strcpy(com,command);
@@ -145,7 +144,7 @@ int tokenize(char *command){
 }
 
 int extract_flags(int n, char** args){
-    
+
     for(int i=0;i<256;i++)
         flag_hash[i] = 0;
 
@@ -163,3 +162,65 @@ int extract_flags(int n, char** args){
     }
     return new_n;
 }
+
+int redirect(int n, char** args){
+
+    int out = -1, in = -1, append = -1;
+    for(int i=0;i<n;i++){
+        if(!strcmp(args[i], ">"))
+            out = i;
+        if(!strcmp(args[i], ">>"))
+            append = i;
+        if(!strcmp(args[i], "<"))
+            in = i;
+    }
+    if(out >= 0){
+        args[out] = NULL;
+        int fd = open(args[out+1], O_WRONLY | O_TRUNC | O_CREAT, 0644);
+        if(fd < 0){
+            perror("Unable to open the output file.");
+            return n-2;
+        }
+        args[out+1] = NULL;
+        dup2(fd, 1);
+        close(fd);
+    }
+
+    if(append >= 0){
+        args[append] = NULL;
+
+        int fd = open(args[append+1], O_RDWR | O_APPEND | O_CREAT, 0644);
+        if(fd < 0){
+            perror("Unable to open the output file.");
+            return n-2;
+        }
+        args[append+1] = NULL;
+        dup2(fd, 1);
+        close(fd);
+    }
+
+    if(in >= 0){
+        strcpy(args[in], args[in+1]);
+        args[in+1] = NULL;
+        /*
+        args[in] = NULL;
+        int fd = open(args[in+1], O_RDONLY, 0);
+        if(fd < 0){
+            perror("Unable to open the input file.");
+            return n-2;
+        }
+        args[in+1] = NULL;
+        dup2(fd, 0);
+        close(fd);
+        */
+        n--;
+
+    }
+    //if(out >= 0 || append >= 0 || in >= 0)
+    if(out >= 0 || append >= 0)
+        n-=2;
+
+    return n;
+}
+
+
