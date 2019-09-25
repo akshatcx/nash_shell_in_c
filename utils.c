@@ -118,7 +118,7 @@ int get_commands(){
         exit(0);
     }
     add_history(cmds);
-    local_history(cmds);
+    //local_history(cmds);
 
     commands[0] = strtok(cmds,";");
 
@@ -203,16 +203,16 @@ int redirect(int n, char** args){
         strcpy(args[in], args[in+1]);
         args[in+1] = NULL;
         /*
-        args[in] = NULL;
-        int fd = open(args[in+1], O_RDONLY, 0);
-        if(fd < 0){
-            perror("Unable to open the input file.");
-            return n-2;
-        }
-        args[in+1] = NULL;
-        dup2(fd, 0);
-        close(fd);
-        */
+           args[in] = NULL;
+           int fd = open(args[in+1], O_RDONLY, 0);
+           if(fd < 0){
+           perror("Unable to open the input file.");
+           return n-2;
+           }
+           args[in+1] = NULL;
+           dup2(fd, 0);
+           close(fd);
+           */
         n--;
 
     }
@@ -223,4 +223,121 @@ int redirect(int n, char** args){
     return n;
 }
 
+void child_exited(int n){
+
+    int status;
+    pid_t wpid = waitpid(-1, &status, WNOHANG);
+
+    if(wpid > 0 && WIFEXITED(status)==0){
+        printf("\nProcess with pid %d exited normally\n", wpid);
+    }
+    if(wpid > 0 && WIFSIGNALED(status)==0){
+        printf("\nProcess with pid %d exited due to a user-defined signal\n", wpid);
+    }
+}
+
+int execute_program(char* command){
+
+    int no_tokens = tokenize(command);
+    int savestdout = dup(1);
+    no_tokens = redirect(no_tokens, tokens);
+    if(no_tokens == -1)
+        return -1;     
+
+    if((*cmd_functions[hash(tokens[0])]) != NULL){
+        no_tokens = extract_flags(no_tokens, tokens);
+        int exitcode = (*cmd_functions[hash(tokens[0])])(no_tokens, tokens);
+        dup2(savestdout,1);
+        return exitcode;
+    }
+
+    int bg = 0;
+
+    pid_t pid = fork();
+
+    if(strcmp(tokens[no_tokens-1],"&")==0){
+        no_tokens--;
+        tokens[no_tokens] = NULL;
+        bg = 1;
+    } 
+
+    if(pid < 0){
+        perror("Fork failed:");
+        return 0;
+    }
+    else if(pid == 0){
+        if(bg)
+            setpgid(0, 0);
+
+        int proc = execvp(tokens[0], tokens);
+        if(proc == -1)
+            perror("Error executing:");
+
+        exit(EXIT_FAILURE);
+    }
+    else {
+        int status;
+        if(!bg){
+            do{
+                waitpid(pid, &status, WUNTRACED);
+            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+        }
+        else{
+            signal(SIGCHLD, child_exited);
+        }
+    }
+    dup2(savestdout,1);
+    return 1; 
+}
+
+int exec_pipe(char *command){
+
+    int fd[2];
+    pipe(fd);
+    pid_t pid = fork();
+
+    if (pid == 0){
+        dup2(fd[1], 1);
+        execute_program(command);
+        abort();
+    }
+
+    else if (pid > 0){
+        dup2(fd[0], 0);
+        close(fd[1]);
+    }
+
+    close(fd[0]);
+    close(fd[1]);
+}
+
+
+int exec_com(char *command){
+
+    int no_pipes = 0;
+    char* pipes[BUF_COM]; 
+
+    int savestdout = dup(1);
+    int savestdin = dup(0);
+    pipes[0] = strtok(command, "|");
+
+    while(pipes[no_pipes] != NULL)
+        pipes[++no_pipes] = strtok(NULL, "|");
+    if(no_pipes == 1)
+        return execute_program(pipes[0]);
+
+    for(int i=0;i<no_pipes;i++){
+        if(i == no_pipes - 1){
+            dup2(savestdout,1);
+            execute_program(pipes[i]);
+        }
+        else
+            exec_pipe(pipes[i]);
+            
+    }
+
+    dup2(savestdin,0);
+    dup2(savestdout,1);
+    return 0;
+}
 

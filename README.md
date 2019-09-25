@@ -13,3 +13,6 @@ To run: `./nash`
 - builtins.c - Has all the builtin functions and execvp functions
 - main.c - Has the main function
 - nash.h - Has the definitions, global variables, and function prototypes
+
+## To - Do 
+- Fix History

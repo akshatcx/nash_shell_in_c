@@ -72,5 +72,6 @@ int get_commands();
 int tokenize(char *command);
 int extract_flags(int n, char** args);
 int redirect(int n, char** args);
+int exec_com(char *command);
 
 #endif
