@@ -64,6 +64,12 @@ int execute_program(char* command);
 int history_nash(int k, char** args);
 int setenv_nash(int k, char** args);
 int unsetenv_nash(int k, char** args);
+int jobs_nash(int n, char** args);
+int kjob_nash(int n, char** args);
+int bg_nash(int n, char** args);
+int fg_nash(int n, char** args);
+int overkill_nash(int n, char** args);
+
 void calculate_hash();
 void update();
 char* get_prompt();
@@ -73,5 +79,19 @@ int tokenize(char *command);
 int extract_flags(int n, char** args);
 int redirect(int n, char** args);
 int exec_com(char *command);
+int no_jobs;
+struct Job* nth_node(int n);
+
+struct Job{
+    int pid;
+    char command[BUF_COM];
+    struct Job* next;
+};
+
+struct Job* head;
+
+struct Job* newJob(int pid, char* cmd);
+void appendJob(int pid, char* cmd);
+int delJob(int pid);
 
 #endif

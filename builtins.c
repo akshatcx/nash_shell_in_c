@@ -296,3 +296,117 @@ int unsetenv_nash(int n, char **args){
     unsetenv(var);
     return 1;
 }
+
+int jobs_nash(int n, char **args){
+    
+    struct Job* i = head;
+    int count = 0;
+    while(i){
+         
+        count++;
+        char procpath[BUF_PWD];
+        sprintf(procpath, "/proc/%d/stat", i->pid);
+    
+        FILE *stat = fopen(procpath, "r");
+        if(stat == NULL){
+            printf("Infomation not available for PID: %d\n", i->pid);
+            continue;
+        }
+        
+        int pid;
+        char s, pname[BUF_PWD];
+
+        fscanf(stat, "%d %s %c", &pid, pname, &s);
+        fclose(stat);
+        
+        char status[8]; 
+        if(s == 'S' || s == 'R')
+            strcpy(status, "Running");
+        else if(s == 'T')
+            strcpy(status, "Stopped");
+        else
+            strcpy(status, "UNKNOWN");
+        
+        printf("[%d] %s %s [%d]\n", count, status, i->command, i->pid);
+        i = i->next;
+    }
+    return 1;
+}
+
+int kjob_nash(int n, char **args){
+    
+    if(n != 3){
+        printf("kjob: Incorrect number of arguments\n");
+        return 0;
+    }
+    int jobno = atoi(args[1]);
+    int sig = atoi(args[2]);
+    if(jobno > no_jobs){
+        printf("kjob: No such job exists\n");
+        return 1;
+    }
+    struct Job* temp = nth_node(jobno);
+    if(kill(temp->pid, sig) == -1){
+        perror("");
+        return 0;
+    }
+    delJob(temp->pid);
+    return 1;
+}
+    
+int fg_nash(int n,char **args){
+    
+    if(n != 2){
+        printf("fg: Incorrect number of arguments\n");
+        return 0;
+    }
+    int jobno = atoi(args[1]);
+    
+    if(jobno > no_jobs){
+        printf("fg: No such job exists\n");
+        return 1;
+    }
+    struct Job* temp = nth_node(jobno);
+    signal(SIGCHLD, SIG_IGN);
+    kill(temp->pid, SIGCONT);
+    int fg_pid = temp->pid, status;
+    struct Job j = *temp;
+    delJob(fg_pid);
+    waitpid(j.pid, &status, WUNTRACED);
+
+    if(WIFSTOPPED(status))
+        appendJob(j.pid,j.command);
+    //signal(SIGCHLD, handler);
+    return 1;
+}
+
+int bg_nash(int n, char** args){
+
+    if(n != 2){
+        printf("bg: Incorrect number of arguments\n");
+        return 0;
+    }
+    int jobno = atoi(args[1]);
+    if(jobno > no_jobs){
+        printf("bg: No such job exists\n");
+        return 0;
+    }
+    struct Job* temp = nth_node(jobno);
+    kill(temp->pid, SIGCONT);
+    return 1;
+}
+
+int overkill_nash(int n, char**args){
+    struct Job* i = head;
+    struct Job* temp;
+    while(i){
+        temp = i;
+        i = i->next;
+        if(kill(temp->pid,9) == -1){
+            perror("");
+            return 0;
+        }
+        delJob(temp->pid);
+    }
+    return 1;
+}

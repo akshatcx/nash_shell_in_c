@@ -32,6 +32,11 @@ void calculate_hash(){
     cmd_functions[hash("history")] = &history_nash;
     cmd_functions[hash("setenv")] = &setenv_nash;
     cmd_functions[hash("unsetenv")] = &unsetenv_nash;
+    cmd_functions[hash("jobs")] = &jobs_nash;
+    cmd_functions[hash("kjob")] = &kjob_nash;
+    cmd_functions[hash("fg")] = &fg_nash;
+    cmd_functions[hash("bg")] = &bg_nash;
+    cmd_functions[hash("overkill")] = &overkill_nash;
 }
 
 
@@ -232,6 +237,7 @@ void child_exited(int n){
         printf("\nProcess with pid %d exited normally\n", wpid);
     }
     if(wpid > 0 && WIFSIGNALED(status)==0){
+        delJob(wpid);
         printf("\nProcess with pid %d exited due to a user-defined signal\n", wpid);
     }
 }
@@ -259,6 +265,7 @@ int execute_program(char* command){
         no_tokens--;
         tokens[no_tokens] = NULL;
         bg = 1;
+
     } 
 
     if(pid < 0){
@@ -276,6 +283,7 @@ int execute_program(char* command){
         exit(EXIT_FAILURE);
     }
     else {
+
         int status;
         if(!bg){
             do{
@@ -283,6 +291,10 @@ int execute_program(char* command){
             } while (!WIFEXITED(status) && !WIFSIGNALED(status));
         }
         else{
+            char com[BUF_COM];
+            strncpy(com, command, strlen(command) - 2);
+            com[strlen(command) - 2] = '\0';
+            appendJob(pid,com);
             signal(SIGCHLD, child_exited);
         }
     }
@@ -341,3 +353,56 @@ int exec_com(char *command){
     return 0;
 }
 
+struct Job* nth_node(int n){
+    struct Job* temp = head;
+    for(int i=1;i<n;i++)
+        temp = temp->next;
+    return temp;
+}
+
+
+struct Job* newJob(int pid, char* cmd){
+    struct Job* temp = (struct Job*)malloc(sizeof(struct Job));
+    temp->pid = pid;
+    strcpy(temp->command, cmd);
+    temp->next = NULL;
+    return temp;
+}
+
+void appendJob(int pid, char* cmd){
+    struct Job* new = newJob(pid, cmd);
+    
+    if(head == NULL)
+        head = new;
+    else{
+        struct Job* i = head;
+        while(i->next)
+            i = i->next;
+        i->next = new;
+    }
+    no_jobs++;
+}
+
+int delJob(int pid){
+    no_jobs--;
+    struct Job* temp = head;
+    
+    if(temp->pid == pid){
+        head = temp->next;
+        free(temp);
+        return 1;
+    }
+    while(temp->next){
+        if(temp->next->pid == pid){
+            struct Job* n = temp->next->next;
+            free(temp->next);
+            temp->next = n;
+            return 1;
+        }
+        temp = temp->next;
+    }
+    return 1;
+}
+
+
+        

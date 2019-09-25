@@ -7,7 +7,9 @@
 #include "nash.h"
 
 int main(){
-
+    
+    no_jobs = 0;
+    head = NULL;
     getcwd(home, sizeof(home));
     calculate_hash();
 

@@ -16,3 +16,6 @@ To run: `./nash`
 
 ## To - Do 
 - Fix History
+- Fix bg
+- Fix fg
+- FIx Buffers
