@@ -49,6 +49,8 @@ char *tokens[BUF_TOK];
 int flag_hash[256];
 int (*cmd_functions[HASH_MAX]) (int, char **);
 
+void handler(int sig);
+void zhandler(int sig);
 void torelative(char *path);
 int hash(unsigned char *str);
 int exit_nash(int n, char** args);
@@ -95,4 +97,5 @@ struct Job* newJob(int pid, char* cmd);
 void appendJob(int pid, char* cmd);
 int delJob(int pid);
 
+int fpid;
 #endif

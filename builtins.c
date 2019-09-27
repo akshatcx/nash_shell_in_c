@@ -310,6 +310,7 @@ int jobs_nash(int n, char **args){
         FILE *stat = fopen(procpath, "r");
         if(stat == NULL){
             printf("Infomation not available for PID: %d\n", i->pid);
+            i = i->next;
             continue;
         }
         
@@ -367,11 +368,12 @@ int fg_nash(int n,char **args){
     }
     signal(SIGCHLD, SIG_IGN);
     kill(temp->pid, SIGCONT);
-    int fg_pid = temp->pid, status;
+    fpid = temp->pid; 
+    int status;
     struct Job j = *temp;
-    delJob(fg_pid);
+    delJob(fpid);
     waitpid(j.pid, &status, WUNTRACED);
-
+    fpid = 0;
     if(WIFSTOPPED(status))
         appendJob(j.pid,j.command);
     //signal(SIGCHLD, handler);
@@ -408,3 +410,5 @@ int overkill_nash(int n, char**args){
     }
     return 1;
 }
+
+

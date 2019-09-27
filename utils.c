@@ -120,8 +120,8 @@ int get_commands(){
     int n = 0;
 
     if(cmds == NULL){
-        printf("\nExiting Shell, Goodbye!\n");
-        exit(0);
+        printf("\n");
+        return 0;
     }
     add_history(cmds);
     //local_history(cmds);
@@ -232,7 +232,7 @@ int redirect(int n, char** args){
 void child_exited(int n){
 
     int status;
-    pid_t wpid = waitpid(-1, &status, WNOHANG);
+    pid_t wpid = waitpid(-1, &status, WUNTRACED);
 
     if(wpid > 0 && WIFEXITED(status)==0){
         delJob(wpid);
@@ -289,9 +289,15 @@ int execute_program(char* command){
 
         int status;
         if(!bg){
-            do{
-                waitpid(pid, &status, WUNTRACED);
-            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+            fpid = pid;
+            waitpid(pid, &status, WUNTRACED);
+            if(WIFSTOPPED(status)){
+                appendJob(pid, command);
+            }
+            //do{
+            //    waitpid(pid, &status, WUNTRACED);
+            //} while (!WIFEXITED(status) && !WIFSIGNALED(status));
+            fpid = 0;
         }
         else{
             char com[BUF_COM];
@@ -454,3 +460,13 @@ int cronjob_nash(int n, char** args){
     }
     return 0;
 }           
+
+void handler(int sig){
+    printf("PD: %d\n",fpid);
+    if(fpid)
+        kill(fpid,sig);
+}
+
+void zhandler(int sig){
+    return;
+}

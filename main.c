@@ -8,6 +8,11 @@
 
 int main(){
     
+    fpid = 0; 
+    signal(SIGINT, handler); 
+    signal(SIGQUIT, handler); 
+    signal(SIGTSTP, zhandler); 
+    signal(SIGCHLD, child_exited); 
     no_jobs = 0;
     head = NULL;
     getcwd(home, sizeof(home));
