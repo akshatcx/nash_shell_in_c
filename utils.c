@@ -37,6 +37,7 @@ void calculate_hash(){
     cmd_functions[hash("fg")] = &fg_nash;
     cmd_functions[hash("bg")] = &bg_nash;
     cmd_functions[hash("overkill")] = &overkill_nash;
+    cmd_functions[hash("cronjob")] = &cronjob_nash;
 }
 
 
@@ -234,6 +235,7 @@ void child_exited(int n){
     pid_t wpid = waitpid(-1, &status, WNOHANG);
 
     if(wpid > 0 && WIFEXITED(status)==0){
+        delJob(wpid);
         printf("\nProcess with pid %d exited normally\n", wpid);
     }
     if(wpid > 0 && WIFSIGNALED(status)==0){
@@ -251,7 +253,8 @@ int execute_program(char* command){
         return -1;     
 
     if((*cmd_functions[hash(tokens[0])]) != NULL){
-        no_tokens = extract_flags(no_tokens, tokens);
+        if(strcmp(tokens[0], "cronjob")!=0)
+            no_tokens = extract_flags(no_tokens, tokens);
         int exitcode = (*cmd_functions[hash(tokens[0])])(no_tokens, tokens);
         dup2(savestdout,1);
         return exitcode;
@@ -355,8 +358,12 @@ int exec_com(char *command){
 
 struct Job* nth_node(int n){
     struct Job* temp = head;
-    for(int i=1;i<n;i++)
-        temp = temp->next;
+    for(int i=1;i<n;i++){
+        if(temp!=NULL)
+            temp = temp->next;
+        else
+            return NULL;
+    }
     return temp;
 }
 
@@ -405,4 +412,45 @@ int delJob(int pid){
 }
 
 
-        
+int cronjob_nash(int n, char** args){
+    
+    char com[BUF_COM], tot, freq;
+    strcpy(com, "");
+    int i = 0;
+    while(i < n){
+        if(strcmp(args[i], "-c") == 0){
+            i++;
+            while(i < n && strcmp(args[i%n], "-t") && strcmp(args[i%n], "-p")){
+                strcat(com, args[i]);
+                strcat(com, " ");
+                i++;
+            }
+        }
+        if(strcmp(args[i%n], "-t") == 0)
+            tot = atoi(args[i+1]);
+        if(strcmp(args[i%n], "-p") == 0)
+            freq = atoi(args[i+1]);
+        i++;
+    }
+
+    int pid = fork();
+    if(pid == 0){
+        setpgid(0,0);
+        signal(SIGINT, SIG_DFL);
+        int k = tot / freq;
+        while(k--){
+            sleep(freq);
+            exec_com(com);
+        }
+        exit(0);
+    }
+    else{
+        char croncom[BUF_COM];
+        strcpy(croncom, "");
+        for(int i=0;i<n;i++)
+           strcat(croncom, args[i]); 
+        appendJob(pid,croncom);
+        signal(SIGCHLD, child_exited);
+    }
+    return 0;
+}           

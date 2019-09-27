@@ -69,6 +69,7 @@ int kjob_nash(int n, char** args);
 int bg_nash(int n, char** args);
 int fg_nash(int n, char** args);
 int overkill_nash(int n, char** args);
+int cronjob_nash(int n, char** args);
 
 void calculate_hash();
 void update();

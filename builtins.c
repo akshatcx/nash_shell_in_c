@@ -341,16 +341,15 @@ int kjob_nash(int n, char **args){
     }
     int jobno = atoi(args[1]);
     int sig = atoi(args[2]);
-    if(jobno > no_jobs){
+    struct Job* temp = nth_node(jobno);
+    if(temp == NULL){
         printf("kjob: No such job exists\n");
         return 1;
     }
-    struct Job* temp = nth_node(jobno);
     if(kill(temp->pid, sig) == -1){
         perror("");
         return 0;
     }
-    delJob(temp->pid);
     return 1;
 }
     
@@ -361,12 +360,11 @@ int fg_nash(int n,char **args){
         return 0;
     }
     int jobno = atoi(args[1]);
-    
+    struct Job* temp = nth_node(jobno);
     if(jobno > no_jobs){
         printf("fg: No such job exists\n");
         return 1;
     }
-    struct Job* temp = nth_node(jobno);
     signal(SIGCHLD, SIG_IGN);
     kill(temp->pid, SIGCONT);
     int fg_pid = temp->pid, status;
