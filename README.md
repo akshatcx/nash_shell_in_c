@@ -14,3 +14,16 @@ To run: `./nash`
 - main.c - Has the main function
 - nash.h - Has the definitions, global variables, and function prototypes
 
+## List of commands
+- ls
+- cd
+- exit
+- pwd
+- echo
+- pinfo
+- nightswatch
+- history
+- setenv
+- unsetenv
+- jobs
+- overkill
